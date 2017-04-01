@@ -5,7 +5,16 @@ var NAVTREE =
       [ "Overview", "index.html#overview", null ],
       [ "Useful links", "index.html#links", null ],
       [ "Quick example", "index.html#example", null ],
-      [ "License", "index.html#license", null ]
+      [ "License", "index.html#license_sect", null ]
+    ] ],
+    [ "Ponder License", "license_page.html", null ],
+    [ "Namespaces", null, [
+      [ "Namespace List", "namespaces.html", "namespaces" ],
+      [ "Namespace Members", "namespacemembers.html", [
+        [ "All", "namespacemembers.html", null ],
+        [ "Functions", "namespacemembers_func.html", null ],
+        [ "Enumerations", "namespacemembers_enum.html", null ]
+      ] ]
     ] ],
     [ "Classes", "annotated.html", [
       [ "Class List", "annotated.html", "annotated_dup" ],
@@ -15,7 +24,15 @@ var NAVTREE =
         [ "All", "functions.html", "functions_dup" ],
         [ "Functions", "functions_func.html", "functions_func" ],
         [ "Variables", "functions_vars.html", null ],
-        [ "Typedefs", "functions_type.html", null ]
+        [ "Typedefs", "functions_type.html", null ],
+        [ "Enumerator", "functions_eval.html", null ]
+      ] ]
+    ] ],
+    [ "Files", null, [
+      [ "File List", "files.html", "files" ],
+      [ "File Members", "globals.html", [
+        [ "All", "globals.html", null ],
+        [ "Macros", "globals_defs.html", null ]
       ] ]
     ] ]
   ] ]
@@ -23,8 +40,8 @@ var NAVTREE =
 
 var NAVTREEINDEX =
 [
-".html",
-"classponder_1_1_value.html#a1430d529e5bc06fe0ab80331bfdd399a"
+"annotated.html",
+"classponder_1_1_value.html#a05195ebf03c57a1f55f8d14b89d1d861"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';
