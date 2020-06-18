@@ -4,7 +4,7 @@
  **
  ** The MIT License (MIT)
  **
- ** Copyright (C) 2016-17 Nick Trout.
+ ** Copyright (C) 2015-2019 Nick Trout.
  **
  ** Permission is hereby granted, free of charge, to any person obtaining a copy
  ** of this software and associated documentation files (the "Software"), to deal
@@ -29,43 +29,20 @@
 #define PONDER_USES_LUA_IMPL
 #define PONDER_USES_RUNTIME_IMPL
 #include <ponder/class.hpp>
-#include <ponder/detail/format.hpp>
 #include <ponder/classbuilder.hpp>
 #include <ponder/uses/lua.hpp>
 #include <list>
+#include <cstdio>
+#include <cmath>
 
 extern "C" {
 #include <lualib.h>
 }
 
-static_assert(LUA_VERSION_NUM==502, "Expecting Lua 5.2");
+static_assert(LUA_VERSION_NUM==503, "Expecting Lua 5.3");
 
 #define PLDB(X) X
 #define PASSERT(X) if(!(X)) __builtin_trap()
-
-namespace fmt = ponder::detail::fmt;
-
-namespace ponder_ext
-{
-    template <>
-    struct ValueMapper<ponder::detail::string_view>
-    {
-        static const ponder::ValueKind kind = ponder::ValueKind::String;
-        
-        // convert to ponder::String
-        static ponder::String to(const ponder::detail::string_view& source)
-        {
-            return ponder::String(source);
-        }
-
-        // convert to string_view from ponder type
-        template <typename T>
-        static ponder::detail::string_view from(const T& source)
-        {
-            return ponder::detail::string_view(ValueMapper<ponder::String>::from(source));
-        }
-    };
-}
 
 namespace lib
 {
@@ -168,7 +145,7 @@ namespace lib
             .function("get", &Vec::get, policy::ReturnMultiple()) // tuple
             .function("set", &Vec::set)
             .function("add", &Vec::operator+=)
-            .function("add2", &Vec::operator+).tag("+")
+            .function("add2", &Vec::operator+) //.tag("+")
             .function("length", &Vec::length)
             .function("dot", &Vec::dot)
         
@@ -226,16 +203,16 @@ PONDER_TYPE(lib::Parsing)
 
 static bool luaTest(lua_State *L, const char *source, int lineNb, bool success = true)
 {
-    fmt::print("l:{}------------------------------------------------------\n", lineNb);
-    fmt::print("Test{}: {}\n", success ? "" : "(should fail)", source);
+    std::printf("l:%d------------------------------------------------------\n", lineNb);
+    std::printf("Test%s: %s\n", success ? "" : "(should fail)", source);
     const bool ok = ponder::lua::runString(L, source);
     if (ok != success)
     {
-        fmt::print("FAILED");
+        std::printf("FAILED");
         exit(EXIT_FAILURE);
         return false;
     }
-    fmt::print("\n");
+    std::printf("\n");
     return true;
 }
 
@@ -244,7 +221,7 @@ static bool luaTest(lua_State *L, const char *source, int lineNb, bool success =
 
 int main()
 {
-    fmt::print("Lua version {}\n", LUA_VERSION);
+    std::printf("Lua version %s\n", LUA_VERSION);
     
     lua_State *L = luaL_newstate();
     luaopen_base(L);
@@ -289,8 +266,12 @@ int main()
 
     // method call with object arg
     LUA_PASS("a,b = Vec2(2,3), Vec2(3,4); c = a:dot(b); print(c); assert(c == 2*3+3*4)");
-    
-    // method call (:) with return object
+
+    // method call (:) with return object (immutable)
+    LUA_PASS("c = a:add2(b); assert(c ~= nil); print(c.x, c.y);");
+    LUA_PASS("assert(c.x == 5); assert(c.y == 7);");
+
+    // method call (:) with return object (mutable)
     LUA_PASS("c = a:add(b); assert(c ~= nil); print(c.x, c.y);");
     LUA_PASS("assert(c.x == 5); assert(c.y == 7);");
 

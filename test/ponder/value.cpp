@@ -5,7 +5,7 @@
 ** The MIT License (MIT)
 **
 ** Copyright (C) 2009-2014 TEGESO/TEGESOFT and/or its subsidiary(-ies) and mother company.
-** Copyright (C) 2015-2017 Nick Trout.
+** Copyright (C) 2015-2019 Nick Trout.
 **
 ** Permission is hereby granted, free of charge, to any person obtaining a copy
 ** of this software and associated documentation files (the "Software"), to deal
@@ -27,13 +27,11 @@
 **
 ****************************************************************************/
 
-#include <ponder/value.hpp>
-#include <ponder/class.hpp>
-#include <ponder/enum.hpp>
-#include <ponder/type.hpp>
-#include <ponder/valuevisitor.hpp>
-#include <ponder/enumobject.hpp>
-#include <ponder/userobject.hpp>
+// Tests for Value.
+//  - Get/set.
+//  - Type visitor.
+//  - Type coercion.
+
 #include <ponder/classbuilder.hpp>
 #include "test.hpp"
 
@@ -44,6 +42,7 @@ namespace ValueTest
         MyClass(int x_) : x(x_) {}
         int x;
         std::string str_ = "hello";
+        double a[10];
         
         const std::string& str() const {return str_;}
     };
@@ -145,7 +144,7 @@ TEST_CASE("Ponder has variant values")
     ponder::Value cstringValue = "1";
     ponder::Value stringValue  = ponder::String("1");
     ponder::Value enumValue    = One;
-    ponder::Value objectValue  = object1;
+    ponder::Value objectValue  = ponder::UserObject::makeRef(&object1);
     
     SECTION("values have type")
     {
@@ -246,7 +245,7 @@ TEST_CASE("Ponder has variant values")
         REQUIRE(doubleValue.to<unsigned long>() ==  1);
         REQUIRE(doubleValue.to<float>() == Approx(1.f).epsilon(1E-5f));
         REQUIRE(doubleValue.to<double>() == Approx(1.).epsilon(1E-5));
-        REQUIRE(doubleValue.to<ponder::String>() ==    "1");
+        REQUIRE(doubleValue.to<ponder::String>() == "1.000000");
         REQUIRE(doubleValue.to<MyEnum>() ==         One);
         REQUIRE_THROWS_AS(doubleValue.to<MyClass>(), ponder::BadType);
 
@@ -395,7 +394,7 @@ TEST_CASE("Ponder has variant values")
         REQUIRE_THROWS_AS(objectValue.to<ponder::String>(),       ponder::BadType);
         REQUIRE_THROWS_AS(objectValue.to<MyEnum>(),            ponder::BadType);
         REQUIRE(objectValue.to<MyClass>() == object1);
-        IS_TRUE(objectValue.to<ponder::UserObject>() == ponder::UserObject(object1));
+        IS_TRUE(objectValue.to<ponder::UserObject>() == ponder::UserObject(&object1));
 
         REQUIRE(objectValue.isCompatible<bool>() ==           true);
         REQUIRE(objectValue.isCompatible<char>() ==           false);
@@ -408,7 +407,7 @@ TEST_CASE("Ponder has variant values")
         REQUIRE(objectValue.isCompatible<unsigned long>() ==  false);
         REQUIRE(objectValue.isCompatible<float>() ==          false);
         REQUIRE(objectValue.isCompatible<double>() ==         false);
-        REQUIRE(objectValue.isCompatible<ponder::String>() ==    false);
+        REQUIRE(objectValue.isCompatible<ponder::String>() == false);
         REQUIRE(objectValue.isCompatible<MyEnum>() ==         false);
         REQUIRE(objectValue.isCompatible<MyClass>() ==        true);
     }
@@ -498,14 +497,16 @@ TEST_CASE("Ponder has variant values")
         REQUIRE(ponder::Value(1.)      == ponder::Value(1.));
         REQUIRE(ponder::Value("1")     == ponder::Value("1"));
         REQUIRE(ponder::Value(One)     == ponder::Value(One));
-        IS_TRUE(ponder::Value(object1) == ponder::Value(object1));
+        IS_TRUE(ponder::Value(&object1) == ponder::Value(&object1));    // refs are ==
+        IS_TRUE(ponder::Value(object1) != ponder::Value(&object1));     // copies are !=
 
         REQUIRE(ponder::Value(true)    != ponder::Value(false));
         REQUIRE(ponder::Value(1)       != ponder::Value(2));
         REQUIRE(ponder::Value(1.)      != ponder::Value(2.));
         REQUIRE(ponder::Value("1")     != ponder::Value("2"));
         REQUIRE(ponder::Value(One)     != ponder::Value(Two));
-        IS_TRUE(ponder::Value(object1) != ponder::Value(object2));
+        IS_TRUE(ponder::Value(&object1) != ponder::Value(&object2));    // ref
+        IS_TRUE(ponder::Value(object1) != ponder::Value(object2));      // copy
     }
 
     SECTION("values can be compared using less than")
@@ -574,8 +575,8 @@ TEST_CASE("Ponder has variant values")
         REQUIRE(equivalent(ponder::Value(1.),      ponder::Value(1.)) ==      true);
         REQUIRE(equivalent(ponder::Value("1"),     ponder::Value("1")) ==     true);
         REQUIRE(equivalent(ponder::Value(One),     ponder::Value(One)) ==     true);
-        REQUIRE(equivalent(ponder::Value(object1), ponder::Value(object1)) == true);
-        REQUIRE(equivalent(ponder::Value(object1), ponder::Value(object2)) == false);
+        REQUIRE(equivalent(ponder::Value(&object1), ponder::Value(&object1)) == true);
+        REQUIRE(equivalent(ponder::Value(&object1), ponder::Value(&object2)) == false);
 
         REQUIRE((ponder::Value(false) < ponder::Value(true)) == true);
         REQUIRE((ponder::Value(1)     < ponder::Value(2)) ==    true);
@@ -735,7 +736,6 @@ TEST_CASE("Values have their type determined")
     static_assert(ponder_ext::ValueMapper<MyClass>::kind == ponder::ValueKind::User, "");
     
     static_assert(ponder_ext::ValueMapper<std::string>::kind == ponder::ValueKind::String, "");
-    static_assert(ponder_ext::ValueMapper<const std::string&>::kind == ponder::ValueKind::String, "");
     static_assert(ponder_ext::ValueMapper<const std::string>::kind == ponder::ValueKind::String, "");
     static_assert(ponder_ext::ValueMapper<const char*>::kind == ponder::ValueKind::String, "");
 }

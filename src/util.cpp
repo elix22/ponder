@@ -5,8 +5,8 @@
  ** The MIT License (MIT)
  **
  ** Copyright (C) 2009-2014 TEGESO/TEGESOFT and/or its subsidiary(-ies) and mother company.
-** Copyright (C) 2015-2017 Nick Trout.
-  **
+ ** Copyright (C) 2015-2019 Nick Trout.
+ **
  ** Permission is hereby granted, free of charge, to any person obtaining a copy
  ** of this software and associated documentation files (the "Software"), to deal
  ** in the Software without restriction, including without limitation the rights
@@ -27,18 +27,19 @@
  **
  ****************************************************************************/
 
-
 #include <ponder/detail/util.hpp>
+
+#if defined(__GNUWIN32__) && __cplusplus >= 201103L
+    // MinGW support using C++11 defines __STRICT_ANSI__ which removes strcasecmp
+    // used below. As a fix, undefine __STRICT_ANSI__ before including strings.h.
+#undef __STRICT_ANSI__
+#endif
 
 #ifdef _MSC_VER
 #   include <string.h>
 #else
 #   include <strings.h>
 #endif
-
-// Convert to string:
-//  #include "format.h"
-//  http://zverovich.net/2013/09/07/integer-to-string-conversion-in-cplusplus.html
 
 // Convert from string:
 //  http://tinodidriksen.com/2010/02/16/cpp-convert-string-to-int-speed/
@@ -59,7 +60,7 @@ static inline int stricmp(const char* a, const char* b)
 }
 
 // parse string
-    
+
 template <typename T>
 static bool parse_integer(const String& from, T& to)
 {
@@ -140,7 +141,7 @@ bool conv(const String& from, unsigned long long& to)
     }
     return true;
 }
-    
+
 bool conv(const String& from, bool& to)
 {
     const char *s = from.c_str();

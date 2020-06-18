@@ -5,7 +5,7 @@
 ** The MIT License (MIT)
 **
 ** Copyright (C) 2009-2014 TEGESO/TEGESOFT and/or its subsidiary(-ies) and mother company.
-** Copyright (C) 2015-2017 Nick Trout.
+** Copyright (C) 2015-2019 Nick Trout.
 **
 ** Permission is hereby granted, free of charge, to any person obtaining a copy
 ** of this software and associated documentation files (the "Software"), to deal
@@ -38,14 +38,13 @@ template <typename T> struct IsUserType {
     static constexpr bool value = std::is_class<RawType>::value
         && !std::is_same<RawType, Value>::value
         && !std::is_same<RawType, UserObject>::value
-        && !std::is_same<RawType, std::string>::value;
+        && !std::is_same<RawType, ponder::String>::value;
 };
 
 // Decide whether the UserObject holder should be ref (true) or copy (false).
 template <typename T> struct IsUserObjRef {
     static constexpr bool value = std::is_pointer<T>::value || std::is_reference<T>::value;
 };
-
 
 /**
  * \brief Helper structure allowing a shortcut when converting a ponder::Value to type
@@ -67,7 +66,7 @@ struct ValueTo<Value>
 template <typename T>
 Value::Value(const T& val)
     : m_value(ponder_ext::ValueMapper<T>::to(val))
-    , m_type(mapType<T>())
+    , m_type(ponder_ext::ValueMapper<T>::kind) // mapType<T> NOT used so get same kind as to()
 {
 }
 
@@ -108,13 +107,6 @@ const T& Value::cref() const
     {
         PONDER_ERROR(BadType(kind(), mapType<T>()));
     }
-}
-
-
-template <typename T>
-Value::operator T() const
-{
-    return to<T>();
 }
 
 template <typename T>

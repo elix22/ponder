@@ -5,7 +5,7 @@
 ** The MIT License (MIT)
 **
 ** Copyright (C) 2009-2014 TEGESO/TEGESOFT and/or its subsidiary(-ies) and mother company.
-** Copyright (C) 2015-2017 Nick Trout.
+** Copyright (C) 2015-2019 Nick Trout.
 **
 ** Permission is hereby granted, free of charge, to any person obtaining a copy
 ** of this software and associated documentation files (the "Software"), to deal
@@ -27,23 +27,21 @@
 **
 ****************************************************************************/
 
-
 #include <ponder/class.hpp>
 #include <ponder/constructor.hpp>
 
+namespace ponder {
 
-namespace ponder
-{
-
-Class::Class(IdRef name)
+Class::Class(TypeId const& id, IdRef name)
 : m_sizeof(0)
-, m_id(name)
+, m_id(id)
+, m_name(name)
 {
-}    
-    
+}
+
 IdReturn Class::name() const
 {
-    return m_id;
+    return m_name;
 }
 
 std::size_t Class::sizeOf() const
@@ -54,6 +52,16 @@ std::size_t Class::sizeOf() const
 std::size_t Class::constructorCount() const
 {
     return m_constructors.size();
+}
+
+const Constructor* Class::constructor(std::size_t index) const
+{
+    return m_constructors[index].get();
+}
+
+void Class::destruct(const UserObject &uobj, bool destruct) const
+{
+    m_destructor(uobj, destruct);
 }
 
 std::size_t Class::baseCount() const

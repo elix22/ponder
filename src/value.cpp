@@ -5,7 +5,7 @@
 ** The MIT License (MIT)
 **
 ** Copyright (C) 2009-2014 TEGESO/TEGESOFT and/or its subsidiary(-ies) and mother company.
-** Copyright (C) 2015-2017 Nick Trout.
+** Copyright (C) 2015-2019 Nick Trout.
 **
 ** Permission is hereby granted, free of charge, to any person obtaining a copy
 ** of this software and associated documentation files (the "Software"), to deal
@@ -27,10 +27,7 @@
 **
 ****************************************************************************/
 
-
-
 #include <ponder/value.hpp>
-
 
 namespace ponder {
     
@@ -46,6 +43,12 @@ Value::Value(const Value& other)
     : m_value(other.m_value)
     , m_type(other.m_type)
 {
+}
+
+Value::Value(Value&& other)
+{
+    std::swap(m_value, other.m_value);
+    std::swap(m_type, other.m_type);
 }
 
 void Value::operator = (const Value& other)
@@ -72,17 +75,16 @@ bool Value::operator < (const Value& other) const
 std::istream& operator >> (std::istream& stream, Value& value)
 {
     // Use the string conversion
-    Id str;
-    if (stream >> str)
-        value = str;
-
+//    ponder::Id str;
+//    stream >> str;
+//    value = str;
     return stream;
 }
 
 std::ostream& operator << (std::ostream& stream, const Value& value)
 {
     // Use the string conversion
-    return stream << value.to<Id>();
+    return stream; // << value.to<ponder::Id>();
 }
 
 } // namespace ponder

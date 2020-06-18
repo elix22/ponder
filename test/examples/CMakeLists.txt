@@ -4,7 +4,7 @@
 ##
 ## The MIT License (MIT)
 ##
-## Copyright (C) 2015-2016-17 Nick Trout.
+## Copyright (C) 2015-2015-2019 Nick Trout.
 ##
 ## Permission is hereby granted, free of charge, to any person obtaining a copy
 ## of this software and associated documentation files (the "Software"), to deal
@@ -31,12 +31,13 @@ project(exampletest)
 
 # all source files
 set(TEST_SRCS
-    main.cpp
+    test.hpp
+    declare.cpp
+    inspect.cpp
     simple.cpp
-)
-
-include_directories(
-    ${PONDER_SOURCE_DIR}/include
+    shapes.cpp
+    userdata.cpp
+    main.cpp
 )
 
 link_directories(
@@ -44,8 +45,6 @@ link_directories(
 )
 
 add_executable(egtest ${TEST_SRCS})
-
-target_compile_features(egtest PUBLIC cxx_range_for cxx_variadic_templates) # required
 
 target_link_libraries(egtest ponder)
 

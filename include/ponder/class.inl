@@ -5,7 +5,7 @@
 ** The MIT License (MIT)
 **
 ** Copyright (C) 2009-2014 TEGESO/TEGESOFT and/or its subsidiary(-ies) and mother company.
-** Copyright (C) 2015-2017 Nick Trout.
+** Copyright (C) 2015-2019 Nick Trout.
 **
 ** Permission is hereby granted, free of charge, to any person obtaining a copy
 ** of this software and associated documentation files (the "Software"), to deal
@@ -29,32 +29,32 @@
 
 
 namespace ponder {
-    
 namespace detail {
 
 template <typename T>
 void destroy(const UserObject& object, bool destruct)
 {
     if (destruct)
-        object.get<T*>() -> ~T();
+        object.get<T*>()->~T();
     else
         delete object.get<T*>();
 }
 
 template <typename T>
-UserObject userObjectCreator(void* ptr)
+static inline UserObject userObjectCreator(void* ptr)
 {
-    return UserObject(static_cast<T*>(ptr));
+    return UserObject::makeRef(*static_cast<T*>(ptr));
 }
     
 } // namespace detail
 
 template <typename T>
-inline ClassBuilder<T> Class::declare(IdRef id)
+inline ClassBuilder<T> Class::declare(IdRef name)
 {
+    typedef detail::StaticTypeDecl<T> typeDecl;
     Class& newClass =
-        detail::ClassManager::instance().addClass(
-            id.empty() ? detail::StaticTypeId<T>::get(false) : id);
+        detail::ClassManager::instance()
+            .addClass(typeDecl::id(false), name.empty() ? typeDecl::name(false) : name);
     newClass.m_sizeof = sizeof(T);
     newClass.m_destructor = &detail::destroy<T>;
     newClass.m_userObjectCreator = &detail::userObjectCreator<T>;
@@ -62,10 +62,9 @@ inline ClassBuilder<T> Class::declare(IdRef id)
 }
 
 template <typename T>
-inline void Class::undeclare(IdRef id)
+inline void Class::undeclare()
 {
-    detail::ClassManager::instance().removeClass(
-        id.empty() ? detail::StaticTypeId<T>::get(false) : id);
+    detail::ClassManager::instance().removeClass(detail::getTypeId<T>());
 }
 
 inline Class::FunctionTable::Iterator Class::functionIterator() const

@@ -5,7 +5,7 @@
 ** The MIT License (MIT)
 **
 ** Copyright (C) 2009-2014 TEGESO/TEGESOFT and/or its subsidiary(-ies) and mother company.
-** Copyright (C) 2015-2017 Nick Trout.
+** Copyright (C) 2015-2019 Nick Trout.
 **
 ** Permission is hereby granted, free of charge, to any person obtaining a copy
 ** of this software and associated documentation files (the "Software"), to deal
@@ -27,16 +27,11 @@
 **
 ****************************************************************************/
 
-
 #include <ponder/errors.hpp>
 #include <ponder/class.hpp>
 #include <ponder/detail/util.hpp>
-#include <ponder/detail/format.hpp>
-
 
 namespace ponder {
-
-using ponder::detail::fmt::format;
     
 BadType::BadType(ValueKind provided, ValueKind expected)
 : Error("value of type " + typeName(provided)
@@ -58,8 +53,10 @@ BadArgument::BadArgument(ValueKind provided,
                          ValueKind expected,
                          std::size_t index,
                          IdRef functionName)
-: BadType(format("argument #{} of function {} couldn't be converted from type {} to type {}",
-                 str(index), String(functionName), typeName(provided), typeName(expected)))
+: BadType("argument #" + str(index) +
+          " of function " + String(functionName) +
+          " couldn't be converted from type " + typeName(provided) +
+          " to type " + typeName(expected))
 {
 }
 
@@ -79,8 +76,8 @@ ClassUnrelated::ClassUnrelated(IdRef sourceClass, IdRef requestedClass)
 {
 }
 
-EnumAlreadyCreated::EnumAlreadyCreated(IdRef typeId)
-    : Error("enum named " + String(typeId) + " already exists")
+EnumAlreadyCreated::EnumAlreadyCreated(IdRef typeName)
+    : Error("enum named " + String(typeName) + " already exists")
 {
 }
 
@@ -141,6 +138,11 @@ OutOfRange::OutOfRange(std::size_t index, std::size_t size)
 
 PropertyNotFound::PropertyNotFound(IdRef name, IdRef className)
     : Error("the property " + String(name) + " couldn't be found in metaclass " + String(className))
+{
+}
+
+TypeAmbiguity::TypeAmbiguity(IdRef typeName)
+: Error("type " + String(typeName) + " ambiguity")
 {
 }
 

@@ -5,7 +5,7 @@
 ** The MIT License (MIT)
 **
 ** Copyright (C) 2009-2014 TEGESO/TEGESOFT and/or its subsidiary(-ies) and mother company.
-** Copyright (C) 2015-2017 Nick Trout.
+** Copyright (C) 2015-2019 Nick Trout.
 **
 ** Permission is hereby granted, free of charge, to any person obtaining a copy
 ** of this software and associated documentation files (the "Software"), to deal
@@ -27,11 +27,12 @@
 **
 ****************************************************************************/
 
-
+#pragma once
 #ifndef PONDER_DETAIL_CLASSMANAGER_HPP
 #define PONDER_DETAIL_CLASSMANAGER_HPP
 
-#include <ponder/detail/observernotifier.hpp>
+#include "observernotifier.hpp"
+#include <ponder/type.hpp>
 #include <map>
 
 namespace ponder {
@@ -50,6 +51,10 @@ namespace detail {
  */
 class PONDER_API ClassManager : public ObserverNotifier
 {
+    // No need for shared pointers in here, we're the one and only instance holder
+    typedef std::map<TypeId, Class*> ClassTable;
+    typedef std::map<Id, Class*> NameTable;
+
 public:
 
     /**
@@ -71,7 +76,7 @@ public:
      *
      * \throw ClassAlreadyCreated \a name or \a id already exists
      */
-    Class& addClass(IdRef id);
+    Class& addClass(TypeId const& id, IdRef name);
 
     /**
      * \brief Unregister an existing metaclass
@@ -83,7 +88,7 @@ public:
      *
      * \throw ClassNotFound \a id not found
      */
-    void removeClass(IdRef id);
+    void removeClass(TypeId const& id);
 
     /**
      * \brief Get the total number of metaclasses
@@ -91,20 +96,24 @@ public:
      * \return Number of metaclasses that have been registered
      */
     std::size_t count() const;
-
+    
     /**
-     * \brief Get a metaclass from its global index
+     * \brief Begin iterator for iterating over contained classes
      *
-     * This function, together with ClassManager::count, provides a way to iterate through
-     * all the metaclasses that have been declared.
+     * \return An iterator
      *
-     * \param index Global index of the metaclass to get
-     *
-     * \return Reference to the index-th metaclass
-     *
-     * \throw OutOfRange index is out of range
+     * \see classIterator()
      */
-    const Class& getByIndex(std::size_t index) const;
+    ClassTable::const_iterator begin() const;
+    
+    /**
+     * \brief End iterator for iterating over contained classes
+     *
+     * \return An iterator
+     *
+     * \see classIterator()
+     */
+    ClassTable::const_iterator end() const;
 
     /**
      * \brief Get a metaclass from a C++ type
@@ -115,7 +124,9 @@ public:
      *
      * \throw ClassNotFound id is not the name of an existing metaclass
      */
-    const Class& getById(IdRef id) const;
+    const Class& getById(TypeId const& id) const;
+
+    const Class& getByName(IdRef name) const;
 
     /**
      * \brief Get a metaclass from a C++ type
@@ -127,7 +138,7 @@ public:
      *
      * \return Pointer to the requested metaclass, or null pointer if not found
      */
-    const Class* getByIdSafe(IdRef id) const;
+    const Class* getByIdSafe(TypeId const& id) const;
 
     /**
      * \brief Check if a given type has a metaclass
@@ -136,7 +147,7 @@ public:
      *
      * \return True if the class exists, false otherwise
      */
-    bool classExists(IdRef id) const;
+    bool classExists(TypeId const& id) const;
 
     /**
      * \brief Default constructor
@@ -152,8 +163,8 @@ public:
 
 private:
 
-    typedef std::map<Id, Class*> ClassTable; ///< No need for shared pointers in here, we're the one and only instance holder
-    ClassTable m_classes; ///< Table storing classes indexed by their ID
+    ClassTable m_classes;   // Table storing classes indexed by their ID
+    NameTable m_names;      // Name look up of classes
 };
 
 } // namespace detail

@@ -5,7 +5,7 @@
 ** The MIT License (MIT)
 **
 ** Copyright (C) 2009-2014 TEGESO/TEGESOFT and/or its subsidiary(-ies) and mother company.
-** Copyright (C) 2015-2017 Nick Trout.
+** Copyright (C) 2015-2019 Nick Trout.
 **
 ** Permission is hereby granted, free of charge, to any person obtaining a copy
 ** of this software and associated documentation files (the "Software"), to deal
@@ -27,10 +27,8 @@
 **
 ****************************************************************************/
 
-
 #include <ponder/detail/classmanager.hpp>
 #include <ponder/class.hpp>
-
 
 namespace ponder {
 namespace detail {
@@ -41,19 +39,21 @@ ClassManager& ClassManager::instance()
     return cm;
 }
 
-Class& ClassManager::addClass(IdRef id)
+Class& ClassManager::addClass(TypeId const& id, IdRef name)
 {
     // First make sure that the class doesn't already exist
-    if (classExists(id))
+    // Note, we check by id and name. Neither should be registered.
+    if (classExists(id) || (!name.empty() && m_names.find(name) != m_names.end()))
     {
-        PONDER_ERROR(ClassAlreadyCreated(id));
+        PONDER_ERROR(ClassAlreadyCreated(name));
     }
 
     // Create the new class
-    Class *newClass = new Class(id);
+    Class *newClass = new Class(id, name);
 
     // Insert it into the table
-    m_classes.insert(std::make_pair(Id(id), newClass));
+    m_classes.insert(std::make_pair(id, newClass));
+    m_names.insert(std::make_pair(Id(name), newClass));
 
     // Notify observers
     notifyClassAdded(*newClass);
@@ -62,19 +62,21 @@ Class& ClassManager::addClass(IdRef id)
     return *newClass;
 }
 
-void ClassManager::removeClass(IdRef id)
+void ClassManager::removeClass(TypeId const& id)
 {
     if (!classExists(id))
     {
-        PONDER_ERROR(ClassNotFound(id));
+        PONDER_ERROR(ClassNotFound("?"));
     }
 
-    ClassTable::const_iterator it = m_classes.find(id);
-    Class* classPtr = it->second;
+    auto it = m_classes.find(id);
+    Class* classPtr{ it->second };
+    auto itName = m_names.find(classPtr->m_name);
 
     // Notify observers
     notifyClassRemoved(*classPtr);
-        
+
+    m_names.erase(itName);
     delete classPtr;
     m_classes.erase(it);
 }
@@ -84,36 +86,43 @@ std::size_t ClassManager::count() const
     return m_classes.size();
 }
 
-const Class& ClassManager::getByIndex(std::size_t index) const
+ClassManager::ClassTable::const_iterator ClassManager::begin() const
 {
-    // Make sure that the index is not out of range
-    if (index >= m_classes.size())
-        PONDER_ERROR(OutOfRange(index, m_classes.size()));
-
-    ClassTable::const_iterator it = m_classes.begin();
-    std::advance(it, index);
-
-    return *it->second;
+    return m_classes.begin();
+}
+    
+ClassManager::ClassTable::const_iterator ClassManager::end() const
+{
+    return m_classes.end();
 }
 
-const Class& ClassManager::getById(IdRef id) const
+const Class* ClassManager::getByIdSafe(TypeId const& id) const
 {
-    ClassTable::const_iterator it = m_classes.find(id);
-    if (it == m_classes.end())
-        PONDER_ERROR(ClassNotFound(id));
-
-    return *it->second;
-}
-
-const Class* ClassManager::getByIdSafe(IdRef id) const
-{
-    ClassTable::const_iterator it = m_classes.find(id);
+    ClassTable::const_iterator it{ m_classes.find(id) };
     return (it == m_classes.end()) ? nullptr : it->second;
 }
 
-bool ClassManager::classExists(IdRef id) const
+const Class& ClassManager::getByName(IdRef name) const
 {
-    return m_classes.find(Id(id)) != m_classes.end();
+    NameTable::const_iterator it = m_names.find(name);
+    if (it == m_names.end())
+        PONDER_ERROR(ClassNotFound(name));
+
+    return *it->second;
+}
+
+const Class& ClassManager::getById(TypeId const& id) const
+{
+    ClassTable::const_iterator it = m_classes.find(id);
+    if (it == m_classes.end())
+        PONDER_ERROR(ClassNotFound("?"));
+        
+    return *it->second;
+}
+
+bool ClassManager::classExists(TypeId const& id) const
+{
+    return m_classes.find(id) != m_classes.end();
 }
 
 ClassManager::ClassManager()

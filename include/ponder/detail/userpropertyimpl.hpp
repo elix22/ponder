@@ -5,7 +5,7 @@
 ** The MIT License (MIT)
 **
 ** Copyright (C) 2009-2014 TEGESO/TEGESOFT and/or its subsidiary(-ies) and mother company.
-** Copyright (C) 2015-2017 Nick Trout.
+** Copyright (C) 2015-2019 Nick Trout.
 **
 ** Permission is hereby granted, free of charge, to any person obtaining a copy
 ** of this software and associated documentation files (the "Software"), to deal
@@ -27,75 +27,36 @@
 **
 ****************************************************************************/
 
-
+#pragma once
 #ifndef PONDER_DETAIL_USERPROPERTYIMPL_HPP
 #define PONDER_DETAIL_USERPROPERTYIMPL_HPP
 
-
 #include <ponder/userproperty.hpp>
 
-
-namespace ponder
-{
-namespace detail
-{
-/**
- * \brief Typed implementation of UserProperty
- *
- * UserPropertyImpl is a template implementation of UserProperty, which is strongly typed
- * in order to keep track of the true underlying C++ types involved in the property.
- *
- * The template parameter A is an abstract helper to access the actual C++ property.
- *
- * \sa UserProperty
- */
+namespace ponder {
+namespace detail {
+    
 template <typename A>
 class UserPropertyImpl : public UserProperty
 {
 public:
 
-    /**
-     * \brief Construct the property from its accessors
-     *
-     * \param name Name of the property
-     * \param accessor Object used to access the actual C++ property
-     */
-    UserPropertyImpl(IdRef name, const A& accessor);
+    UserPropertyImpl(IdRef name, A&& accessor);
 
 protected:
 
-    /**
-     * \see Property::isReadable
-     */
-    bool isReadable() const override;
+    bool isReadable() const final;
+    bool isWritable() const final;
 
-    /**
-     * \see Property::isWritable
-     */
-    bool isWritable() const override;
-
-    /**
-     * \see Property::getValue
-     */
-    Value getValue(const UserObject& object) const override;
-
-    /**
-     * \see Property::setValue
-     */
-    void setValue(const UserObject& object, const Value& value) const override;
-
-    /**
-    * \see UserProperty::getObject
-    */
-    UserObject getObject(const UserObject& parentInstance) const override;
+    Value getValue(const UserObject& object) const final;
+    void setValue(const UserObject& object, const Value& value) const final;
 
 private:
 
-    A m_accessor; ///< Object used to access the actual C++ property
+    A m_accessor; // Object used to access the actual C++ property
 };
 
 } // namespace detail
-
 } // namespace ponder
 
 #include <ponder/detail/userpropertyimpl.inl>

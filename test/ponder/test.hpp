@@ -4,7 +4,6 @@
 
 #include <ponder/value.hpp>
 #include <ponder/enum.hpp>
-#include <ponder/detail/format.hpp>
 
 // see https://github.com/philsquared/Catch/blob/master/docs/tostring.md
 
@@ -13,3 +12,8 @@
 #define IS_TRUE(T)      REQUIRE((T))
 #define IS_FALSE(T)     REQUIRE_FALSE((T))
 #define IS_EQUAL(X,Y)   REQUIRE(X == Y)
+
+inline std::ostream& operator << (std::ostream& stream, const ponder::Value& value)
+{
+    return stream << value.to<std::string>();
+}

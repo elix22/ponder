@@ -34,7 +34,7 @@
 # generate package filename
 # setup CPACK_PACKAGE_FILE_NAME and CPACK_SOURCE_PACKAGE_FILE_NAME according to
 # the current build architecture, system and compiler
-# Note that CPACK_PACKAGE_NAME and VERSION_STR must be defined
+# Note that CPACK_PACKAGE_NAME and PONDER_VERSION_STR must be defined
 ###############################
 
 # detect architecture
@@ -51,6 +51,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     set(PACKAGE_SYSTEM_NAME "linux${NATIVE_ARCH}")
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     set(PACKAGE_SYSTEM_NAME "win${NATIVE_ARCH}")
+    message(STATUS "MSVC version: ${MSVC_VERSION}")
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set(PACKAGE_SYSTEM_NAME "osx")
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Android")
@@ -83,6 +84,8 @@ elseif(MSVC_VERSION EQUAL 1800)
     set(PACKAGE_COMPILER_NAME "vc2013")
 elseif(MSVC_VERSION EQUAL 1900)
     set(PACKAGE_COMPILER_NAME "vc2015")
+elseif((MSVC_VERSION GREATER_EQUAL 1910) AND (MSVC_VERSION LESS 1920))
+    set(PACKAGE_COMPILER_NAME "vc2017")
 else()
     message(WARNING "Unsupported compiler for package generation")
     return()

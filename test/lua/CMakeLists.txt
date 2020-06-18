@@ -4,7 +4,7 @@
 ##
 ## The MIT License (MIT)
 ##
-## Copyright (C) 2015-2016-17 Nick Trout.
+## Copyright (C) 2015-2015-2019 Nick Trout.
 ##
 ## Permission is hereby granted, free of charge, to any person obtaining a copy
 ## of this software and associated documentation files (the "Software"), to deal
@@ -29,7 +29,9 @@
 # set project's name
 project(luatest)
 
-find_package(Lua 5.2 REQUIRED)
+# Use local Lua for testing to avoid find_package(Lua 5.3 REQUIRED) OS install inconsistencies
+set(LUA_INCLUDE_DIR "${PONDER_SOURCE_DIR}/deps/include")
+set(LUA_LIBRARIES "-L${PONDER_SOURCE_DIR}/deps/lib -llua")
 
 # all source files
 set(TEST_SRCS
@@ -37,7 +39,6 @@ set(TEST_SRCS
 )
 
 include_directories(
-    ${PONDER_SOURCE_DIR}/include
     ${LUA_INCLUDE_DIR}
 )
 
@@ -46,8 +47,6 @@ link_directories(
 )
 
 add_executable(luatest ${TEST_SRCS})
-
-target_compile_features(luatest PUBLIC cxx_range_for cxx_variadic_templates) # required
 
 target_compile_definitions(luatest PUBLIC PONDER_USING_LUA=1)
 

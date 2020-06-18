@@ -5,7 +5,7 @@
 ** The MIT License (MIT)
 **
 ** Copyright (C) 2009-2014 TEGESO/TEGESOFT and/or its subsidiary(-ies) and mother company.
-** Copyright (C) 2015-2017 Nick Trout.
+** Copyright (C) 2015-2019 Nick Trout.
 **
 ** Permission is hereby granted, free of charge, to any person obtaining a copy
 ** of this software and associated documentation files (the "Software"), to deal
@@ -13,10 +13,10 @@
 ** to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 ** copies of the Software, and to permit persons to whom the Software is
 ** furnished to do so, subject to the following conditions:
-** 
+**
 ** The above copyright notice and this permission notice shall be included in
 ** all copies or substantial portions of the Software.
-** 
+**
 ** THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 ** IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 ** FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -27,19 +27,22 @@
 **
 ****************************************************************************/
 
-
+#pragma once
+/** \cond NoDocumentation */
 #ifndef PONDER_PONDERTYPE_HPP
 #define PONDER_PONDERTYPE_HPP
+/** \endcond NoDocumentation */
 
 #include <ponder/config.hpp>
+#include "type.hpp"
 
 namespace ponder {
-    
+
 namespace detail
 {
-    template <typename T> struct StaticTypeId;
-    template <typename T> const char* staticTypeId(const T&);
-    PONDER_API void ensureTypeRegistered(const char* id, void (*registerFunc)());
+    template <typename T> struct StaticTypeDecl;
+    template <typename T> constexpr const char* staticTypeName(T&);
+    PONDER_API void ensureTypeRegistered(TypeId const& id, void (*registerFunc)());
 }
 
 /**
@@ -68,21 +71,20 @@ namespace detail
  *
  * \note This macro handles types that contain commas, e.g. `Data<float,int,int>`.
  *
- * \sa PONDER_TYPE(), PONDER_AUTO_TYPE()
+ * \sa PONDER_TYPE(), PONDER_AUTO_TYPE(), \ref eg_page_declare
  */
 #define PONDER_TYPE(...) \
-    namespace ponder { \
-        namespace detail { \
-            template <> struct StaticTypeId<__VA_ARGS__> \
-            { \
-                static const char* get(bool = true) {return #__VA_ARGS__;} \
-                enum {defined = true, copyable = true}; \
-            }; \
-        } \
-    }
+    namespace ponder { namespace detail { \
+        template<> struct StaticTypeDecl<__VA_ARGS__> \
+        { \
+            static TypeId id(bool = true) {return calcTypeId<__VA_ARGS__>();} \
+            static constexpr const char* name(bool = true) {return #__VA_ARGS__;} \
+            static constexpr bool defined = true, copyable = true; \
+        }; \
+    }}
 
 /**
- * \brief Macro used to register a C++ type to Ponder with automatic metaclass creation
+ * \brief Macro used to register a C++ type to Ponder with automatic, on-demand metaclass creation
  *
  * Using this macro rather than PONDER_TYPE() will make Ponder automatically call
  * the provided registration function the first time the metaclass is requested.
@@ -113,38 +115,39 @@ namespace detail
  * }
  * \endcode
  *
- * \sa PONDER_TYPE()
+ * \sa PONDER_TYPE(), \ref eg_page_declare, \ref eg_page_shapes
  */
 #define PONDER_AUTO_TYPE(TYPE, REGISTER_FN) \
-    namespace ponder { \
-        namespace detail { \
-            template <> struct StaticTypeId<TYPE> { \
-                static const char* get(bool checkRegister = true) { \
-                    if (checkRegister) \
-                        detail::ensureTypeRegistered(#TYPE, REGISTER_FN); \
-                    return #TYPE; \
-                } \
-                enum {defined = true, copyable = true}; \
-            }; \
-        } \
-    }
+    namespace ponder { namespace detail { \
+        template<> struct StaticTypeDecl<TYPE> { \
+            static TypeId id(bool checkRegister = true) { \
+                if (checkRegister) detail::ensureTypeRegistered(calcTypeId<TYPE>(), REGISTER_FN); \
+                return calcTypeId<TYPE>(); \
+            } \
+            static const char* name(bool checkRegister = true) { \
+                if (checkRegister) detail::ensureTypeRegistered(calcTypeId<TYPE>(), REGISTER_FN); \
+                return #TYPE; \
+            } \
+            static constexpr bool defined = true, copyable = true; \
+        }; \
+    }}
     // TODO - ensureTypeRegistered() called every time referenced!
 
 /**
  * \brief Macro used to register a non-copyable C++ type to Ponder
  *
- * Disabled copy and assignment cannot be detected at compile-time, thus users have to 
- * explicitly tell Ponder when a type is not copyable/assignable. Objects of a non-copyable 
- * class can be modified through their metaproperties, but they can't be written with a 
+ * Disabled copy and assignment cannot be detected at compile-time, thus users have to
+ * explicitly tell Ponder when a type is not copyable/assignable. Objects of a non-copyable
+ * class can be modified through their metaproperties, but they can't be written with a
  * single call to replace to whole object.
  *
- * Every type manipulated by Ponder must be registered with PONDER_TYPE(), PONDER_AUTO_TYPE() 
+ * Every type manipulated by Ponder must be registered with PONDER_TYPE(), PONDER_AUTO_TYPE()
  * or their NONCOPYABLE versions.
  *
  * Example:
  *
  * \code
- * class NonCopyable : util::noncopyable
+ * class NonCopyable : util::NonCopyable
  * {
  *     int x;
  * };
@@ -168,17 +171,15 @@ namespace detail
  * \sa PONDER_TYPE()
  */
 #define PONDER_TYPE_NONCOPYABLE(TYPE) \
-    namespace ponder { \
-        namespace detail { \
-            template <> struct StaticTypeId<TYPE> { \
-                static const char* get(bool = true) {return #TYPE;} \
-                enum {defined = true, copyable = false}; \
-            }; \
-        } \
-    }
+    namespace ponder { namespace detail { \
+        template <> struct StaticTypeDecl<TYPE> { \
+            static const char* name(bool = true) {return #TYPE;} \
+            static constexpr bool defined = true, copyable = true; \
+        }; \
+    }}
 
 /**
- * \brief Macro used to register a non-copyable C++ type to Ponder with automatic 
+ * \brief Macro used to register a non-copyable C++ type to Ponder with automatic
  *        metaclass creation
  *
  * Using this macro rather than PONDER_TYPE_NONCOPYABLE will make Ponder automatically call
@@ -186,24 +187,25 @@ namespace detail
  * This is useful when you don't want to have to manually call an "init" function to
  * create your metaclass.
  *
- * Every type manipulated by Ponder must be registered with PONDER_TYPE(), PONDER_AUTO_TYPE() 
+ * Every type manipulated by Ponder must be registered with PONDER_TYPE(), PONDER_AUTO_TYPE()
  * or their NONCOPYABLE versions.
  *
  * \sa PONDER_AUTO_TYPE(), PONDER_TYPE_NONCOPYABLE()
  */
 #define PONDER_AUTO_TYPE_NONCOPYABLE(TYPE, REGISTER_FN) \
-    namespace ponder { \
-        namespace detail { \
-            template <> struct StaticTypeId<TYPE> { \
-                static const char* get(bool checkRegister = true) { \
-                    if (checkRegister) \
-                        detail::ensureTypeRegistered(#TYPE, REGISTER_FN); \
-                    return #TYPE; \
-                } \
-                enum {defined = true, copyable = false}; \
-            }; \
-        } \
-    }
+    namespace ponder { namespace detail { \
+        template <> struct StaticTypeDecl<TYPE> { \
+            static TypeId id(bool checkRegister = true) { \
+                if (checkRegister) detail::ensureTypeRegistered(calcTypeId<TYPE>(), REGISTER_FN); \
+                return calcTypeId<TYPE>(); \
+            } \
+            static const char* name(bool checkRegister = true) { \
+                if (checkRegister) detail::ensureTypeRegistered(calcTypeId<TYPE>(), REGISTER_FN); \
+                return #TYPE; \
+            } \
+            static constexpr bool defined = true, copyable = true; \
+        }; \
+    }}
 
 /**
  * \brief Macro used to activate the Ponder RTTI system into a hierarchy of classes
@@ -213,6 +215,7 @@ namespace detail
  *
  * \note This macro does not need to be inserted into all Ponder classes being declared,
  *       only ones which would like to support features like downcasting via polymorphism.
+ *       See \ref eg_page_shapes for an example.
  *
  * Example:
  *
@@ -231,13 +234,16 @@ namespace detail
  * const ponder::Class& mc = ponder::classByObject(b);
  * // mc == metaclass of MyDerived
  * \endcode
+ *
+ * \sa \ref eg_page_shapes
  */
 #define PONDER_POLYMORPHIC() \
     public: \
-        virtual const char* ponderClassId() const {return ponder::detail::staticTypeId(this);} \
+        virtual ponder::TypeId ponderClassId() const {return ponder::detail::staticTypeId(*this);} \
     private:
 
 } // namespace ponder
 
-
+/** \cond NoDocumentation */
 #endif // PONDER_PONDERTYPE_HPP
+/** \endcond NoDocumentation */

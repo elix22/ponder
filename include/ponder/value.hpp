@@ -5,7 +5,7 @@
 ** The MIT License (MIT)
 **
 ** Copyright (C) 2009-2014 TEGESO/TEGESOFT and/or its subsidiary(-ies) and mother company.
-** Copyright (C) 2015-2017 Nick Trout.
+** Copyright (C) 2015-2019 Nick Trout.
 **
 ** Permission is hereby granted, free of charge, to any person obtaining a copy
 ** of this software and associated documentation files (the "Software"), to deal
@@ -27,7 +27,7 @@
 **
 ****************************************************************************/
 
-
+#pragma once
 #ifndef PONDER_VALUE_HPP
 #define PONDER_VALUE_HPP
 
@@ -40,9 +40,9 @@
 #include <iosfwd>
 #include <string>
 
-
 namespace ponder
 {
+
 /**
  * \brief Variant class which is used to wrap values in the Ponder system
  *
@@ -92,7 +92,14 @@ public:
      * \param other Value to copy
      */
     Value(const Value& other);
-    
+
+    /**
+     * \brief Move constructor
+     *
+     * \param other Value to move
+     */
+    Value(Value&& other);
+
     /**
      * \brief Assignment operator
      *
@@ -144,16 +151,6 @@ public:
      */
     template <typename T>
     const T& cref() const;
-
-    /**
-     * \brief Cast operator to implicitly convert the value to a type T
-     *
-     * \return Value converted to T
-     *
-     * \throw BadType the stored value is not convertible to T
-     */
-    template <typename T>
-    operator T() const;     // XXXX remove? behaviour unclear.
 
     /**
      * \brief Check if the stored value can be converted to a type T
@@ -221,7 +218,41 @@ public:
      */
     bool operator < (const Value& other) const;
 
-public:
+    /**
+     * \brief Operator > to compare two values
+     *
+     * \param other Value to compare with this
+     *
+     * \return True if this > other
+     */
+    bool operator > (const Value& other) const 
+    { 
+      return !(*this < other || *this == other); 
+    }
+
+    /**
+     * \brief Operator <= to compare two values
+     *
+     * \param other Value to compare with this
+     *
+     * \return True if this <= other
+     */
+    bool operator <= (const Value& other) const
+    { 
+      return (*this < other || *this == other); 
+    }
+
+    /**
+     * \brief Operator >= to compare two values
+     *
+     * \param other Value to compare with this
+     *
+     * \return True if this >= other
+     */
+    bool operator >= (const Value& other) const
+    { 
+      return !(*this < other); 
+    }
 
     /**
      * \brief Special Value instance representing an empty value
@@ -230,11 +261,12 @@ public:
 
 private:
 
-    typedef mapbox::util::variant<NoType, bool, long, double,
-                                  ponder::String, EnumObject, UserObject> Variant;
+    typedef mapbox::util::variant<
+                NoType, bool, long, double, ponder::String, EnumObject, UserObject
+            > Variant;
 
-    Variant m_value; ///< Stored value
-    ValueKind m_type; ///< Ponder type of the value
+    Variant m_value; // Stored value
+    ValueKind m_type; // Ponder type of the value
 };
 
 /**
@@ -260,6 +292,5 @@ PONDER_API std::ostream& operator<<(std::ostream& stream, const Value& value);
 } // namespace ponder
 
 #include <ponder/value.inl>
-
 
 #endif // PONDER_VALUE_HPP
